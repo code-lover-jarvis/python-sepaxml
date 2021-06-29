@@ -53,8 +53,10 @@ class SepaTransfer(SepaPaymentInitn):
             if config_item not in payment:
                 validation += config_item.upper() + "_MISSING "
 
-        # if (("description" in payment) or ("document" in payment)):
-        #     validation += "DESCRIPTION_OR_DOCUMENT_REQUIRED"
+        if (('description' not in payment) and ('document' not in payment)):
+            validation += "DESCRIPTION_OR_DOCUMENT_REQUIRED"
+        if (("description" in payment) and ("document" in payment)):
+            validation += "DESCRIPTION_AND_DOCUMENT_DONT_CO-EXIST"
 
         if not isinstance(payment['amount'], int):
             validation += "AMOUNT_NOT_INTEGER "
