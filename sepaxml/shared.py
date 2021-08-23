@@ -4,7 +4,6 @@ from collections import OrderedDict
 from utils import decimal_str_to_int, int_to_decimal_str, make_msg_id, make_id
 from validation import try_valid_xml
 
-
 class SepaPaymentInitn:
 
     def __init__(self, config, schema, clean=True):
@@ -33,7 +32,6 @@ class SepaPaymentInitn:
 
         self._prepare_document()
         self._create_header()
-        self._PmtInf_Nodes()
 
     def _prepare_document(self):
         """
@@ -56,9 +54,6 @@ class SepaPaymentInitn:
         self._xml.append(n2)
 
     def _create_header(self):
-        raise NotImplementedError()
-
-    def _PmtInf_Nodes(self):
         raise NotImplementedError()
 
     def _finalize_batch(self):
