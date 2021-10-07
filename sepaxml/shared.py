@@ -37,21 +37,35 @@ class SepaPaymentInitn:
         """
         Build the main document node and set xml namespaces.
         """
-        self._xml = ET.Element("CBIPaymentRequest")
-        self._xml.set("xsi:schemaLocation",
-                      "urn:CBI:xsd:CBIPaymentRequest.00.04.00 " + self.schema + ".xsd")
-        self._xml.set("xmlns",
-                      "urn:CBI:xsd:" + self.schema)
-        self._xml.set("xmlns:xsi",
-                      "http://www.w3.org/2001/XMLSchema-instance")
-        ET.register_namespace("",
-                              "urn:CBI:xsd:" + self.schema)
-        ET.register_namespace("xsi",
-                              "http://www.w3.org/2001/XMLSchema-instance")
-        n1 = ET.Element(self.root_el_g)
-        self._xml.append(n1)
-        n2 = ET.Element(self.root_el_p)
-        self._xml.append(n2)
+
+        if (self._config['CBI']):
+            self._xml = ET.Element("CBIPaymentRequest")
+            self._xml.set("xsi:schemaLocation",
+                          "urn:CBI:xsd:CBIPaymentRequest.00.04.00 " + self.schema + ".xsd")
+            self._xml.set("xmlns",
+                          "urn:CBI:xsd:" + self.schema)
+            self._xml.set("xmlns:xsi",
+                          "http://www.w3.org/2001/XMLSchema-instance")
+            ET.register_namespace("",
+                                  "urn:CBI:xsd:" + self.schema)
+            ET.register_namespace("xsi",
+                                  "http://www.w3.org/2001/XMLSchema-instance")
+            n1 = ET.Element(self.root_el_g)
+            self._xml.append(n1)
+            n2 = ET.Element(self.root_el_p)
+            self._xml.append(n2)
+        else :
+            self._xml = ET.Element("Document")
+            self._xml.set("xmlns",
+                          "urn:iso:std:iso:20022:tech:xsd:" + self.schema)
+            self._xml.set("xmlns:xsi",
+                          "http://www.w3.org/2001/XMLSchema-instance")
+            ET.register_namespace("",
+                                  "urn:iso:std:iso:20022:tech:xsd:" + self.schema)
+            ET.register_namespace("xsi",
+                                  "http://www.w3.org/2001/XMLSchema-instance")
+            n = ET.Element(self.root_el)
+            self._xml.append(n)
 
     def _create_header(self):
         raise NotImplementedError()
@@ -70,18 +84,34 @@ class SepaPaymentInitn:
         ctrl_sum_total = 0
         nb_of_txs_total = 0
 
-        for ctrl_sum in self._xml.iter('InstdAmt'):
-            if ctrl_sum.text is None:
-                continue
-            ctrl_sum_total += decimal_str_to_int(ctrl_sum.text)
+        if (self._config['CBI']):
+            for ctrl_sum in self._xml.iter('InstdAmt'):
+                if ctrl_sum.text is None:
+                    continue
+                ctrl_sum_total += decimal_str_to_int(ctrl_sum.text)
+        else:
+            for ctrl_sum in self._xml.iter('CtrlSum'):
+                if ctrl_sum.text is None:
+                    continue
+                ctrl_sum_total += decimal_str_to_int(ctrl_sum.text)
 
-        for nb_of_txs in self._xml.iter('CdtTrfTxInf'):
-            nb_of_txs_total += 1
-            PmtIdNode = nb_of_txs.find('PmtId')
-            InstrId_Node = PmtIdNode.find('InstrId')
-            InstrId_Node.text = str(nb_of_txs_total)
+        if (self._config['CBI']):
+            for nb_of_txs in self._xml.iter('CdtTrfTxInf'):
+                nb_of_txs_total += 1
+                PmtIdNode = nb_of_txs.find('PmtId')
+                InstrId_Node = PmtIdNode.find('InstrId')
+                InstrId_Node.text = str(nb_of_txs_total)
+        else:
+            for nb_of_txs in self._xml.iter('NbOfTxs'):
+                if nb_of_txs.text is None:
+                    continue
+                nb_of_txs_total += int(nb_of_txs.text)
 
-        GrpHdr_node = self._xml.find('GrpHdr')
+        if (self._config['CBI']):
+            GrpHdr_node = self._xml.find('GrpHdr')
+        else:
+            n = self._xml.find(self.root_el)
+            GrpHdr_node = n.find('GrpHdr')
         CtrlSum_node = GrpHdr_node.find('CtrlSum')
         NbOfTxs_node = GrpHdr_node.find('NbOfTxs')
         CtrlSum_node.text = int_to_decimal_str(ctrl_sum_total)
