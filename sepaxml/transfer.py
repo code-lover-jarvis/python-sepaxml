@@ -11,8 +11,9 @@ class SepaTransfer(SepaPaymentInitn):
     """
     root_el_g = "GrpHdr"
     root_el_p = "PmtInf"
+    root_el = "CstmrCdtTrfInitn"
 
-    def __init__(self, config, schema="CBIPaymentRequest.00.04.00", clean=True):
+    def __init__(self, config, schema="pain.001.001.03", clean=True):
         super().__init__(config, schema, clean)
 
     def check_config(self, config):
@@ -98,17 +99,19 @@ class SepaTransfer(SepaPaymentInitn):
             # Start building the non batch payment
             PmtInf_nodes = self._create_PmtInf_node()
             PmtInf_nodes['PmtInfIdNode'].text = self._config['unique_id']
-            PmtInf_nodes['BtchBookgNode'].text = "false"
             PmtInf_nodes['PmtMtdNode'].text = "TRA"
+            PmtInf_nodes['BtchBookgNode'].text = "false"
+            PmtInf_nodes['NbOfTxsNode'].text = "1"
+            PmtInf_nodes['CtrlSumNode'].text = int_to_decimal_str(
+                payment['amount'])
+
             if not self._config.get('domestic', False):
                 PmtInf_nodes['Cd_SvcLvl_Node'].text = "SEPA"
             if 'execution_date' in payment:
                 PmtInf_nodes['ReqdExctnDtNode'].text = payment['execution_date']
             else:
                 PmtInf_nodes['ReqdExctnDtNode'].text = self._config['execution_date']
-            PmtInf_nodes['NbOfTxsNode'].text = "1"
-            PmtInf_nodes['CtrlSumNode'].text = int_to_decimal_str(
-                payment['amount'])
+
 
             PmtInf_nodes['Nm_Dbtr_Node'].text = self._config['name']
             PmtInf_nodes['IBAN_DbtrAcct_Node'].text = self._config['IBAN']
@@ -118,13 +121,13 @@ class SepaTransfer(SepaPaymentInitn):
             PmtInf_nodes['ChrgBrNode'].text = "SLEV"
             PmtInf_nodes['MmbId_Node'].text = self._config['bank code']
 
-        if 'BIC' in self._config:
-            TX_nodes = self._create_TX_node(payment)
-            TX_nodes['BIC_CdtrAgt_Node'].text = self._config['BIC']
+        if 'BIC' in payment:
+            TX_nodes = self._create_TX_node(payment, bic = True)
+            TX_nodes['BIC_CdtrAgt_Node'].text = payment['BIC']
         else:
             TX_nodes = self._create_TX_node(payment, bic = False)
 
-        TX_nodes['Nm_Cdtr_Node'].text = self._config['name']
+        TX_nodes['Nm_Cdtr_Node'].text = payment['name']
         TX_nodes['InstdAmtNode'].set("Ccy", self._config['currency'])
         TX_nodes['InstdAmtNode'].text = int_to_decimal_str(payment['amount'])
         TX_nodes['Cd_CtgyPurp'].text = "SUPP"
@@ -133,7 +136,6 @@ class SepaTransfer(SepaPaymentInitn):
 
         if ("description" in payment):
             TX_nodes['UstrdNode'].text = payment['description']
-
         if self._config['batch']:
             self._add_batch(TX_nodes, payment)
         else:
@@ -142,8 +144,12 @@ class SepaTransfer(SepaPaymentInitn):
 
     def _create_header(self):
         """
-        Function to create the GroupHeader (GrpHdr) and PmtInf
+        Function to create the GroupHeader (GrpHdr)
         """
+
+        if (self._config['CBI'] == False):
+            CstmrCdtTrfInitn_node = self._xml.find('CstmrCdtTrfInitn')
+            GrpHdr_node = ET.Element("GrpHdr")
         # Create the header nodes.
         MsgId_node = ET.Element("MsgId")
         CreDtTm_node = ET.Element("CreDtTm")
@@ -161,28 +167,35 @@ class SepaTransfer(SepaPaymentInitn):
         MsgId_node.text = self._config['unique_id']
         CreDtTm_node.text = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         Nm_node.text = self._config['name']
-        Id_Othr_node.text = self._config['Organisation_id']
-        Issr_node.text = 'CBI'
+        if (self._config['CBI']):
+            Id_Othr_node.text = self._config['Organisation_id']
+            Issr_node.text = 'CBI'
 
         # Append the nodes
         InitgPty_node.append(Nm_node)
-        Othr_node.append(Id_Othr_node)
-        Othr_node.append(Issr_node)
-        OrgId_node.append(Othr_node)
-        Id_InitgPty_node.append(OrgId_node)
-        InitgPty_node.append(Id_InitgPty_node)
-        GrpHdr_node = self._xml.find('GrpHdr')
+        if (self._config['CBI']):
+            Othr_node.append(Id_Othr_node)
+            Othr_node.append(Issr_node)
+            OrgId_node.append(Othr_node)
+            Id_InitgPty_node.append(OrgId_node)
+            InitgPty_node.append(Id_InitgPty_node)
+            GrpHdr_node = self._xml.find('GrpHdr')
         GrpHdr_node.append(MsgId_node)
         GrpHdr_node.append(CreDtTm_node)
         GrpHdr_node.append(NbOfTxs_node)
         GrpHdr_node.append(CtrlSum_node)
         GrpHdr_node.append(InitgPty_node)
 
+        if (self._config['CBI'] == False):
+            CstmrCdtTrfInitn_node.append(GrpHdr_node)
+
     def _create_PmtInf_node(self):
         """
         Method to create the blank payment information nodes as a dict.
         """
         ED = dict()  # ED is element dict
+        if (self._config['CBI'] == False):
+            ED['PmtInfNode'] = ET.Element("PmtInf")
         ED['PmtInfIdNode'] = ET.Element("PmtInfId")
         ED['PmtMtdNode'] = ET.Element("PmtMtd")
         ED['BtchBookgNode'] = ET.Element("BtchBookg")
@@ -244,10 +257,16 @@ class SepaTransfer(SepaPaymentInitn):
         together with the payment info node and append to the main xml.
         """
 
-        PmtInfnode = self._xml.find('PmtInf')
+        if (self._config['CBI']):
+            PmtInfnode = self._xml.find('PmtInf')
+        else:
+            PmtInfnode = PmtInf_nodes['PmtInfNode']
         PmtInfnode.append(PmtInf_nodes['PmtInfIdNode'])
         PmtInfnode.append(PmtInf_nodes['PmtMtdNode'])
         PmtInfnode.append(PmtInf_nodes['BtchBookgNode'])
+        if (self._config['CBI'] == False):
+            PmtInf_node.append(PmtInf_nodes['NbOfTxsNode'])
+            PmtInf_node.append(PmtInf_nodes['CtrlSumNode'])
 
         if not self._config.get('domestic', False):
             PmtInf_nodes['SvcLvlNode'].append(PmtInf_nodes['Cd_SvcLvl_Node'])
@@ -264,22 +283,22 @@ class SepaTransfer(SepaPaymentInitn):
 
         if 'BIC' in self._config:
             PmtInf_nodes['FinInstnId_DbtrAgt_Node'].append(PmtInf_nodes['BIC_DbtrAgt_Node'])
-        PmtInf_nodes['ClrSysMmbId_Node'].append(PmtInf_nodes['MmbId_Node'])
-        PmtInf_nodes['FinInstnId_DbtrAgt_Node'].append(PmtInf_nodes['ClrSysMmbId_Node'])
+        if (self._config['CBI']):
+            PmtInf_nodes['ClrSysMmbId_Node'].append(PmtInf_nodes['MmbId_Node'])
+            PmtInf_nodes['FinInstnId_DbtrAgt_Node'].append(PmtInf_nodes['ClrSysMmbId_Node'])
         PmtInf_nodes['DbtrAgtNode'].append(PmtInf_nodes['FinInstnId_DbtrAgt_Node'])
         PmtInfnode.append(PmtInf_nodes['DbtrAgtNode'])
 
         PmtInfnode.append(PmtInf_nodes['ChrgBrNode'])
 
-
-
-
-        TX_nodes['PmtIdNode'].append(TX_nodes['InstrId_Node'])
+        if (self._config['CBI']):
+            TX_nodes['PmtIdNode'].append(TX_nodes['InstrId_Node'])
         TX_nodes['PmtIdNode'].append(TX_nodes['EndToEnd_PmtId_Node'])
         TX_nodes['CdtTrfTxInfNode'].append(TX_nodes['PmtIdNode'])
-        TX_nodes['CtgyPurpNode'].append(TX_nodes['Cd_CtgyPurp'])
-        TX_nodes['PmtTpInfNode'].append(TX_nodes['CtgyPurpNode'])
-        TX_nodes['CdtTrfTxInfNode'].append(TX_nodes['PmtTpInfNode'])
+        if (self._config['CBI']):
+            TX_nodes['CtgyPurpNode'].append(TX_nodes['Cd_CtgyPurp'])
+            TX_nodes['PmtTpInfNode'].append(TX_nodes['CtgyPurpNode'])
+            TX_nodes['CdtTrfTxInfNode'].append(TX_nodes['PmtTpInfNode'])
         TX_nodes['AmtNode'].append(TX_nodes['InstdAmtNode'])
         TX_nodes['CdtTrfTxInfNode'].append(TX_nodes['AmtNode'])
 
@@ -305,18 +324,24 @@ class SepaTransfer(SepaPaymentInitn):
             TX_nodes['CdtTrfTxInfNode'].append(TX_nodes['RmtInfNode'])
         PmtInfnode.append(TX_nodes['CdtTrfTxInfNode'])
 
+        if (self._config['CBI'] == False):
+            CstmrCdtTrfInitn_node = self._xml.find('CstmrCdtTrfInitn')
+            CstmrCdtTrfInitn_node.append(PmtInfnode)
+
     def _add_batch(self, TX_nodes, payment):
         """
         Method to add a payment as a batch. The transaction details are already
         present. Will fold the nodes accordingly and the call the
         _add_to_batch_list function to store the batch.
         """
-        TX_nodes['PmtIdNode'].append(TX_nodes['InstrId_Node'])
+        if (self._config['CBI']):
+            TX_nodes['PmtIdNode'].append(TX_nodes['InstrId_Node'])
         TX_nodes['PmtIdNode'].append(TX_nodes['EndToEnd_PmtId_Node'])
         TX_nodes['CdtTrfTxInfNode'].append(TX_nodes['PmtIdNode'])
-        TX_nodes['CtgyPurpNode'].append(TX_nodes['Cd_CtgyPurp'])
-        TX_nodes['PmtTpInfNode'].append(TX_nodes['CtgyPurpNode'])
-        TX_nodes['CdtTrfTxInfNode'].append(TX_nodes['PmtTpInfNode'])
+        if (self._config['CBI']):
+            TX_nodes['CtgyPurpNode'].append(TX_nodes['Cd_CtgyPurp'])
+            TX_nodes['PmtTpInfNode'].append(TX_nodes['CtgyPurpNode'])
+            TX_nodes['CdtTrfTxInfNode'].append(TX_nodes['PmtTpInfNode'])
         TX_nodes['AmtNode'].append(TX_nodes['InstdAmtNode'])
         TX_nodes['CdtTrfTxInfNode'].append(TX_nodes['AmtNode'])
 
@@ -390,10 +415,17 @@ class SepaTransfer(SepaPaymentInitn):
             PmtInf_nodes['ChrgBrNode'].text = "SLEV"
             PmtInf_nodes['MmbId_Node'].text = self._config['bank code']
 
-            PmtInfnode = self._xml.find('PmtInf')
+            if (self._config['CBI']):
+                PmtInfnode = self._xml.find('PmtInf')
+            else:
+                PmtInfnode = PmtInf_nodes['PmtInfNode']
             PmtInfnode.append(PmtInf_nodes['PmtInfIdNode'])
             PmtInfnode.append(PmtInf_nodes['PmtMtdNode'])
             PmtInfnode.append(PmtInf_nodes['BtchBookgNode'])
+
+            if (self._config['CBI'] == False):
+                PmtInfnode.append(PmtInf_nodes['NbOfTxsNode'])
+                PmtInfnode.append(PmtInf_nodes['CtrlSumNode'])
 
             if not self._config.get('domestic', False):
                 PmtInf_nodes['SvcLvlNode'].append(PmtInf_nodes['Cd_SvcLvl_Node'])
@@ -410,8 +442,9 @@ class SepaTransfer(SepaPaymentInitn):
 
             if 'BIC' in self._config:
                 PmtInf_nodes['FinInstnId_DbtrAgt_Node'].append(PmtInf_nodes['BIC_DbtrAgt_Node'])
-            PmtInf_nodes['ClrSysMmbId_Node'].append(PmtInf_nodes['MmbId_Node'])
-            PmtInf_nodes['FinInstnId_DbtrAgt_Node'].append(PmtInf_nodes['ClrSysMmbId_Node'])
+            if (self._config['CBI']):
+                PmtInf_nodes['ClrSysMmbId_Node'].append(PmtInf_nodes['MmbId_Node'])
+                PmtInf_nodes['FinInstnId_DbtrAgt_Node'].append(PmtInf_nodes['ClrSysMmbId_Node'])
             PmtInf_nodes['DbtrAgtNode'].append(PmtInf_nodes['FinInstnId_DbtrAgt_Node'])
             PmtInfnode.append(PmtInf_nodes['DbtrAgtNode'])
 
@@ -419,6 +452,10 @@ class SepaTransfer(SepaPaymentInitn):
 
             for txnode in batch_nodes:
                 PmtInfnode.append(txnode)
+
+            if (self._config['CBI'] == False):
+                CstmrCdtTrfInitn_node = self._xml.find('CstmrCdtTrfInitn')
+                CstmrCdtTrfInitn_node.append(PmtInf_nodes['PmtInfNode'])
 
 
     def _create_strd_nodes(self):
