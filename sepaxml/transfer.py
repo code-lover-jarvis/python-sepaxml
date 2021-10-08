@@ -119,7 +119,7 @@ class SepaTransfer(SepaPaymentInitn):
                 PmtInf_nodes['BIC_DbtrAgt_Node'].text = self._config['BIC']
 
             PmtInf_nodes['ChrgBrNode'].text = "SLEV"
-            PmtInf_nodes['MmbId_Node'].text = self._config['bank code']
+            PmtInf_nodes['MmbId_Node'].text = self._config['bank_code']
 
         if 'BIC' in payment:
             TX_nodes = self._create_TX_node(payment, bic = True)
