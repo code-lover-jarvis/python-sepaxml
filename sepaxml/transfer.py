@@ -265,8 +265,8 @@ class SepaTransfer(SepaPaymentInitn):
         PmtInfnode.append(PmtInf_nodes['PmtMtdNode'])
         PmtInfnode.append(PmtInf_nodes['BtchBookgNode'])
         if (self._config['CBI'] == False):
-            PmtInf_node.append(PmtInf_nodes['NbOfTxsNode'])
-            PmtInf_node.append(PmtInf_nodes['CtrlSumNode'])
+            PmtInfnode.append(PmtInf_nodes['NbOfTxsNode'])
+            PmtInfnode.append(PmtInf_nodes['CtrlSumNode'])
 
         if not self._config.get('domestic', False):
             PmtInf_nodes['SvcLvlNode'].append(PmtInf_nodes['Cd_SvcLvl_Node'])
