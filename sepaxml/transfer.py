@@ -168,7 +168,7 @@ class SepaTransfer(SepaPaymentInitn):
         CreDtTm_node.text = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         Nm_node.text = self._config['name']
         if (self._config['CBI']):
-            Id_Othr_node.text = self._config['Organisation_id']
+            Id_Othr_node.text = self._config['issuer_id']
             Issr_node.text = 'CBI'
 
         # Append the nodes
@@ -413,7 +413,7 @@ class SepaTransfer(SepaPaymentInitn):
                 PmtInf_nodes['BIC_DbtrAgt_Node'].text = self._config['BIC']
 
             PmtInf_nodes['ChrgBrNode'].text = "SLEV"
-            PmtInf_nodes['MmbId_Node'].text = self._config['bank code']
+            PmtInf_nodes['MmbId_Node'].text = self._config['bank_code']
 
             if (self._config['CBI']):
                 PmtInfnode = self._xml.find('PmtInf')
