@@ -39,8 +39,8 @@ Example:
     "BIC": "BANKNL2A",
     "batch": True,
     "execution_date": datetime.date.today(),
-    "bank code" : "abcwwoe",
-    "Organisation_id" : '123aaf',
+    "bank_code" : "abcwwoe",
+    "issuer_id" : '123aaf',
     # For non-SEPA transfers, set "domestic" to True, necessary e.g. for CH/LI
     "CBI": True,
     "currency": "EUR",  # ISO 4217
@@ -49,7 +49,7 @@ Example:
 
     payment1 = {
         "name": "Test von Testenstein",
-        "IBAN": "NL50BANK1234567890",
+        "IBAN": "NL50BANK987654321",
         "BIC": "BANKNL2A",
         "amount": 5000,  # in cents
         "execution_date": datetime.date.today(),
@@ -60,7 +60,7 @@ Example:
     
     payment2 = {
         "name": "Test von Testenstein",
-        "IBAN": "NL50BANK1234567890",
+        "IBAN": "NL50BANK987654321",
         "BIC": "BANKNL2A",
         "amount": 5000,  # in cents
         "execution_date": datetime.date.today(),
