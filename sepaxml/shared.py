@@ -38,7 +38,7 @@ class SepaPaymentInitn:
         Build the main document node and set xml namespaces.
         """
 
-        if (self._config['CBI']):
+        if (self.schema == 'CBIPaymentRequest.00.04.00'):
             self._xml = ET.Element("CBIPaymentRequest")
             self._xml.set("xsi:schemaLocation",
                           "urn:CBI:xsd:CBIPaymentRequest.00.04.00 " + self.schema + ".xsd")
@@ -84,7 +84,7 @@ class SepaPaymentInitn:
         ctrl_sum_total = 0
         nb_of_txs_total = 0
 
-        if (self._config['CBI']):
+        if ((self.schema == 'CBIPaymentRequest.00.04.00')):
             for ctrl_sum in self._xml.iter('InstdAmt'):
                 if ctrl_sum.text is None:
                     continue
@@ -95,7 +95,7 @@ class SepaPaymentInitn:
                     continue
                 ctrl_sum_total += decimal_str_to_int(ctrl_sum.text)
 
-        if (self._config['CBI']):
+        if ((self.schema == 'CBIPaymentRequest.00.04.00')):
             for nb_of_txs in self._xml.iter('CdtTrfTxInf'):
                 nb_of_txs_total += 1
                 PmtIdNode = nb_of_txs.find('PmtId')
@@ -107,7 +107,7 @@ class SepaPaymentInitn:
                     continue
                 nb_of_txs_total += int(nb_of_txs.text)
 
-        if (self._config['CBI']):
+        if ((self.schema == 'CBIPaymentRequest.00.04.00')):
             GrpHdr_node = self._xml.find('GrpHdr')
         else:
             n = self._xml.find(self.root_el)
