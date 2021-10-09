@@ -42,7 +42,6 @@ Example:
     "bank_code" : "abcwwoe",
     "issuer_id" : '123aaf',
     # For non-SEPA transfers, set "domestic" to True, necessary e.g. for CH/LI
-    "CBI": False,
     "currency": "EUR",  # ISO 4217
     }
     sepa = SepaTransfer(config, clean=True)
