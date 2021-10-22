@@ -64,10 +64,10 @@ class SepaTransfer(SepaPaymentInitn):
 
         if 'document' in payment:
             for invoices in payment["document"]:
-                if 'invoice_date' in invoices:
-                    if not isinstance(invoices["invoice_date"], datetime.date):
+                if 'date' in invoices:
+                    if not isinstance(invoices["date"], datetime.date):
                         validation += "INVOICE_DATE_INVALID_OR_NOT_DATETIME_INSTANCE"
-                    invoices["invoice_date"] = invoices["invoice_date"].isoformat()
+                    invoices["date"] = invoices["date"].isoformat()
 
         if 'execution_date' in payment:
             if not isinstance(payment['execution_date'], datetime.date):
@@ -470,6 +470,7 @@ class SepaTransfer(SepaPaymentInitn):
         ED['TpNode'] = ET.Element("Tp")
         ED['RfrdDocInfNode'] = ET.Element("RfrdDocInf")
         ED['RfrdDocAmtNode'] = ET.Element("RfrdDocAmt")
+        ED['AddtlRmtInfNode'] = ET.Element("AddtlRmtInf")
 
         return ED
 
@@ -479,11 +480,12 @@ class SepaTransfer(SepaPaymentInitn):
         for batches in payment['document']:
             # adding data to TX_Nodes
             strd_node = self._create_strd_nodes()
-            strd_node['Nb_Node'].text = batches["invoice_number"]
+            strd_node['Nb_Node'].text = batches["number"]
             strd_node['Cd_Node'].text = batches["type"]
             strd_node['CdtNoteAmt_Node'].set("Ccy", self._config["currency"])
-            strd_node['CdtNoteAmt_Node'].text = batches["invoice_amount"]
-            strd_node['RltdDt_Node'].text = batches["invoice_date"]
+            strd_node['CdtNoteAmt_Node'].text = batches["amount"]
+            strd_node['RltdDt_Node'].text = batches["date"]
+            strd_node['AddtlRmtInfNode'].text = batches["description"]
 
             #appending the strd node for each batches
             strd_node['CdOrPrtryNode'].append(strd_node['Cd_Node'])
@@ -494,6 +496,7 @@ class SepaTransfer(SepaPaymentInitn):
             strd_node['StrdNode'].append(strd_node['RfrdDocInfNode'])
             strd_node['RfrdDocAmtNode'].append(strd_node['CdtNoteAmt_Node'])
             strd_node['StrdNode'].append(strd_node['RfrdDocAmtNode'])
+            strd_node['StrdNode'].append(strd_node['AddtlRmtInfNode'])
             lst.append(strd_node)
             del strd_node
         return lst
