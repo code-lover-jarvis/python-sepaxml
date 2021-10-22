@@ -68,7 +68,7 @@ Example:
         "BIC": "BANKNL2A",
         "amount": 5000,  # in cents
         "execution_date": datetime.date.today(),
-        "document": [{"type":"CINV", "invoice_number":"1", "invoice_date":datetime.date.today(), "invoice_amount":"5000"}, {"type":"CINV", "invoice_number":"2", "invoice_date":datetime.date.today(), "invoice_amount":"7000"}],
+        "document": [{"type":"CINV", "number":"1", "date":datetime.date.today(), "amount":"5000", "description":"hi, hello"}, {"type":"CINV", "number":"2", "date":datetime.date.today(), "amount":"7000", "description":"hello, hi"}],
         "endtoend_id": str(uuid.uuid4().hex)  # optional
     }
     sepa.add_payment(payment2)
