@@ -37,17 +37,19 @@ Example:
 
     from sepaxml import SepaTransfer
     import datetime, uuid
+    import os
 
     config = {
-    "name": "Test von Testenstein",
-    "IBAN": "NL50BANK1234567890",
-    "BIC": "BANKNL2A",
-    "batch": True,
-    "execution_date": datetime.date.today(),
-    "bank_code" : "abcwwoe",
-    "issuer_id" : '123aaf',
-    # For non-SEPA transfers, set "domestic" to True, necessary e.g. for CH/LI
-    "currency": "EUR",  # ISO 4217
+    "name"             :        "Test von Testenstein",
+    "IBAN"             :        "NL50BANK1234567890",
+    "BIC"              :        "BANKNL2A",
+    "batch"            :         True,
+    "execution_date"   :         datetime.date.today(),
+    "priority"         :         False,
+    "notify"           :         False,
+    "bank_code"        :        "abcwwoe",
+    "issuer_id"        :        '123aaf',                                     # For non-SEPA transfers, set "domestic" to True, necessary e.g. for CH/LI
+    "currency"         :        "EUR"                                         # ISO 4217
     }
     sepa = SepaTransfer(config, clean=True)
 
@@ -77,7 +79,8 @@ Example:
     output = sepa.export(validate=True).decode('utf-8')
     print(output)
     
-    with open(r"C:\Path\to\your\output\folder\output.xml", "w") as f:
+    path = os.path.expanduser('~\Desktop\output.xml')    
+    with open(path, "w") as f:
         f.write(output)
 
 
