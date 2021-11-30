@@ -99,11 +99,26 @@ class SepaTransfer(SepaPaymentInitn):
             # Start building the non batch payment
             PmtInf_nodes = self._create_PmtInf_node()
             PmtInf_nodes['PmtInfIdNode'].text = self._config['unique_id']
-            PmtInf_nodes['PmtMtdNode'].text = "TRA"
+            if ('notify' in self._config):
+                if not self._config['notify']:
+                    PmtInf_nodes['PmtMtdNode'].text = "TRF"
+                else :
+                    PmtInf_nodes['PmtMtdNode'].text = "TRA"
+            else :
+                PmtInf_nodes['PmtMtdNode'].text = "TRF"
+
             PmtInf_nodes['BtchBookgNode'].text = "false"
             PmtInf_nodes['NbOfTxsNode'].text = "1"
             PmtInf_nodes['CtrlSumNode'].text = int_to_decimal_str(
                 payment['amount'])
+
+            if ('priority' in self._config):
+                if not self._config['priority']:
+                    PmtInf_nodes['InstrPrtyNode'].text = "NORM"
+                else :
+                    PmtInf_nodes['InstrPrtyNode'].text = "HIGH"
+            else :
+                PmtInf_nodes['InstrPrtyNode'].text = "NORM"
 
             if not self._config.get('domestic', False):
                 PmtInf_nodes['Cd_SvcLvl_Node'].text = "SEPA"
@@ -201,6 +216,7 @@ class SepaTransfer(SepaPaymentInitn):
         ED['BtchBookgNode'] = ET.Element("BtchBookg")
         ED['NbOfTxsNode'] = ET.Element("NbOfTxs")
         ED['CtrlSumNode'] = ET.Element("CtrlSum")
+        ED['InstrPrtyNode'] = ET.Element("InstrPrty")
         ED['PmtTpInfNode'] = ET.Element("PmtTpInf")
         if not self._config.get('domestic', False):
             ED['SvcLvlNode'] = ET.Element("SvcLvl")
@@ -268,10 +284,12 @@ class SepaTransfer(SepaPaymentInitn):
             PmtInfnode.append(PmtInf_nodes['NbOfTxsNode'])
             PmtInfnode.append(PmtInf_nodes['CtrlSumNode'])
 
+        PmtInf_nodes['PmtTpInfNode'].append(PmtInf_nodes['InstrPrtyNode'])
         if not self._config.get('domestic', False):
             PmtInf_nodes['SvcLvlNode'].append(PmtInf_nodes['Cd_SvcLvl_Node'])
             PmtInf_nodes['PmtTpInfNode'].append(PmtInf_nodes['SvcLvlNode'])
-            PmtInfnode.append(PmtInf_nodes['PmtTpInfNode'])
+
+        PmtInfnode.append(PmtInf_nodes['PmtTpInfNode'])
         PmtInfnode.append(PmtInf_nodes['ReqdExctnDtNode'])
 
         PmtInf_nodes['DbtrNode'].append(PmtInf_nodes['Nm_Dbtr_Node'])
@@ -397,7 +415,15 @@ class SepaTransfer(SepaPaymentInitn):
         for batch_meta, batch_nodes in self._batches.items():
             PmtInf_nodes = self._create_PmtInf_node()
             PmtInf_nodes['PmtInfIdNode'].text = self._config['unique_id']
-            PmtInf_nodes['PmtMtdNode'].text = "TRA"
+
+            if ('notify' in self._config):
+                if not self._config['notify']:
+                    PmtInf_nodes['PmtMtdNode'].text = "TRF"
+                else :
+                    PmtInf_nodes['PmtMtdNode'].text = "TRA"
+            else :
+                PmtInf_nodes['PmtMtdNode'].text = "TRF"
+
             PmtInf_nodes['BtchBookgNode'].text = "true"
             if not self._config.get('domestic', False):
                 PmtInf_nodes['Cd_SvcLvl_Node'].text = "SEPA"
@@ -406,6 +432,14 @@ class SepaTransfer(SepaPaymentInitn):
 
             PmtInf_nodes['NbOfTxsNode'].text = str(len(batch_nodes))
             PmtInf_nodes['CtrlSumNode'].text = int_to_decimal_str(self._batch_totals[batch_meta])
+
+            if ('priority' in self._config):
+                if not self._config['priority']:
+                    PmtInf_nodes['InstrPrtyNode'].text = "NORM"
+                else :
+                    PmtInf_nodes['InstrPrtyNode'].text = "HIGH"
+            else :
+                PmtInf_nodes['InstrPrtyNode'].text = "NORM"
 
             PmtInf_nodes['Nm_Dbtr_Node'].text = self._config['name']
             PmtInf_nodes['IBAN_DbtrAcct_Node'].text = self._config['IBAN']
@@ -427,10 +461,12 @@ class SepaTransfer(SepaPaymentInitn):
                 PmtInfnode.append(PmtInf_nodes['NbOfTxsNode'])
                 PmtInfnode.append(PmtInf_nodes['CtrlSumNode'])
 
+            PmtInf_nodes['PmtTpInfNode'].append(PmtInf_nodes['InstrPrtyNode'])
+
             if not self._config.get('domestic', False):
                 PmtInf_nodes['SvcLvlNode'].append(PmtInf_nodes['Cd_SvcLvl_Node'])
                 PmtInf_nodes['PmtTpInfNode'].append(PmtInf_nodes['SvcLvlNode'])
-                PmtInfnode.append(PmtInf_nodes['PmtTpInfNode'])
+            PmtInfnode.append(PmtInf_nodes['PmtTpInfNode'])
             PmtInfnode.append(PmtInf_nodes['ReqdExctnDtNode'])
 
             PmtInf_nodes['DbtrNode'].append(PmtInf_nodes['Nm_Dbtr_Node'])
